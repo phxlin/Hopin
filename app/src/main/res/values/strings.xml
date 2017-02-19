@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">HOPIN</string>
+    <string name="Add_API_Key">AIzaSyAZCbkMtVBO-9Of5xhIdBSwZNohWaVNRbM</string>
+    <string name="location_label">Location:</string>
+    <string name="distance_time">Distance and Time:</string>
+    <string name="current_location">Current Location</string>
+    <string name="search">Search</string>
+    <string name="estimate">Estimate</string>
+</resources>
