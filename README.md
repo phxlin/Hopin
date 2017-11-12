@@ -12,4 +12,4 @@ The following **required** functionality is complete:
 
 ## Demo 
 
-<img src='https://imgur.com/7FwDqhn' title='Demo' width='' alt='Demo' />
+<img src='https://i.imgur.com/7FwDqhn.png' title='Demo' width='' alt='Demo' />
