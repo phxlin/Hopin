@@ -45,14 +45,18 @@ import retrofit.GsonConverterFactory;
 import retrofit.Response;
 import retrofit.Retrofit;
 
-public class MainActivity extends AppCompatActivity
-        implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener
-{
-    private static final int ERROR_DIALOG_REQUEST = 9000;
-    private static final int GRANT_PERMISSION_REQUEST = 8000;
-    private GoogleMap mMap;
-    private GoogleApiClient mLocationClient;
+public class MainActivity
+        extends AppCompatActivity
+        implements OnMapReadyCallback,
+                   GoogleApiClient.ConnectionCallbacks,
+                   GoogleApiClient.OnConnectionFailedListener {
+
+    private static final int ERROR_DIALOG_REQUEST = 9000; //Dialog request
+    private static final int GRANT_PERMISSION_REQUEST = 8000; //Permission request
+
+    private GoogleMap mMap; //An instance of GoogleMap
+    private GoogleApiClient mLocationClient; //An instance of GoogleApiClient
+
     LatLng origin;
     LatLng dest;
     ArrayList<LatLng> MarkerPoints = new ArrayList<>();
@@ -66,7 +70,9 @@ public class MainActivity extends AppCompatActivity
         if(servicesOK()){
             setContentView(R.layout.activity_map);
             ShowDistanceDuration = (TextView) findViewById(R.id.show_distance_time);
+
             if(initMap()){
+
                 mLocationClient = new GoogleApiClient.Builder(this)
                         .addApi(LocationServices.API)
                         .addConnectionCallbacks(this)
@@ -74,6 +80,7 @@ public class MainActivity extends AppCompatActivity
                         .build();
 
                 mLocationClient.connect();
+
             } else {
                 Toast.makeText(this, "Map not connected!", Toast.LENGTH_SHORT).show();
             }
@@ -87,61 +94,6 @@ public class MainActivity extends AppCompatActivity
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
-    }
-
-    @Override
-    public void onMapReady(GoogleMap map){
-        mMap = map;
-
-        int permissionCheck = ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION);
-
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    GRANT_PERMISSION_REQUEST);
-        }
-
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng point) {
-
-                if (MarkerPoints.size() > 2) {
-                    mMap.clear();
-                    MarkerPoints.clear();
-                    ShowDistanceDuration.setText("");
-                }
-
-                MarkerPoints.add(point);
-                MarkerOptions options = new MarkerOptions();
-                options.position(point);
-
-                /**
-                 * For the start location, the color of marker is GREEN and
-                 * for the end location, the color of marker is RED.
-                 */
-                if (MarkerPoints.size() == 1) {
-                    options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
-                } else if (MarkerPoints.size() == 2) {
-                    options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-                }
-
-                mMap.addMarker(options);
-
-                if (MarkerPoints.size() == 2) {
-                    origin = MarkerPoints.get(0);
-                    dest = MarkerPoints.get(1);
-                }
-            }
-        });
-
-        Button btnDriving = (Button) findViewById(R.id.button2);
-        btnDriving.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                build_retrofit_and_get_response("driving");
-            }
-        });
     }
 
     @Override
@@ -159,16 +111,161 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    //Check for APK
+    public boolean servicesOK(){
+
+        int isAvailable =
+                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
+
+        if(isAvailable == ConnectionResult.SUCCESS){
+            return true;
+        } else if (GoogleApiAvailability.getInstance().isUserResolvableError(isAvailable)){
+            Dialog dialog =
+                    GoogleApiAvailability.getInstance().getErrorDialog(this, isAvailable, ERROR_DIALOG_REQUEST);
+            dialog.show();
+        } else {
+            Toast.makeText(this, "Cannot connect to mapping service", Toast.LENGTH_SHORT).show();
+        }
+
+        return false;
+    }
+
+    //Initiate Google Map
+    private boolean initMap(){
+
+        if(mMap == null){
+            SupportMapFragment mapFragment =
+                    (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+            mapFragment.getMapAsync(this);
+        }
+
+        return true;
+    }
+
+    //Find location
+    public void geoLocate(View v) throws IOException{
+
+        hideSoftKeyboard(v);
+
+        TextView tv = (TextView) findViewById(R.id.editText1);
+        String searchString = tv.getText().toString();
+
+        if(!searchString.equals("")) {
+            Toast.makeText(this, "Searching for: " + searchString, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Search bar cannot leave blank!" + searchString, Toast.LENGTH_SHORT).show();
+        }
+
+        Geocoder gc = new Geocoder(this);
+        List<Address> list = gc.getFromLocationName(searchString, 1);
+
+        if(list.size() > 0) {
+
+            Address add = list.get(0);
+            String locality = add.getLocality();
+            Toast.makeText(this, "Found: " + locality, Toast.LENGTH_SHORT).show();
+
+            double lat = add.getLatitude();
+            double lng = add.getLongitude();
+            gotoLocation(lat, lng, 15);
+
+            MarkerOptions options = new MarkerOptions()
+                    .title(locality)
+                    .position(new LatLng(lat, lng));
+
+            origin_and_destination(options.getPosition());
+        }
+    }
+
+    //Soft keyboard
+    private void hideSoftKeyboard(View v){
+
+        InputMethodManager imm =
+                (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+
+        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+    }
+
+    //Go to location
+    private void gotoLocation(double lat, double lng, float zoom){
+
+        LatLng latLng = new LatLng(lat, lng);
+        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latLng, zoom);
+        mMap.animateCamera(update);
+    }
+
+    //Show current location
+    public void showCurrentLocation(MenuItem item) {
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            Location currentLocation = LocationServices.FusedLocationApi
+                    .getLastLocation(mLocationClient);
+
+            if (currentLocation == null) {
+                Toast.makeText(this, "Couldn't connect!", Toast.LENGTH_SHORT).show();
+            } else {
+                LatLng latLng = new LatLng(
+                        currentLocation.getLatitude(),
+                        currentLocation.getLongitude()
+                );
+                CameraUpdate update = CameraUpdateFactory.newLatLngZoom(
+                        latLng, 15
+                );
+                mMap.animateCamera(update);
+
+                origin_and_destination(latLng);
+            }
+        }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap map){
+
+        mMap = map;
+
+        int permissionCheck = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    GRANT_PERMISSION_REQUEST);
+        }
+
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng point) {
+                origin_and_destination(point);
+            }
+        });
+
+        Button btnDriving = (Button) findViewById(R.id.button2);
+        btnDriving.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                build_retrofit_and_get_response("driving");
+            }
+        });
+    }
+
     public void origin_and_destination(LatLng point){
 
-        if (MarkerPoints.size() > 2) {
+        //Clearing map and generating new marker points if user clicks on map more than two times.
+        if (MarkerPoints.size() > 1) {
             mMap.clear();
             MarkerPoints.clear();
             ShowDistanceDuration.setText("");
         }
 
+        //Adding new item to the ArrayList.
         MarkerPoints.add(point);
+
+        //Creating MarketOptions.
         MarkerOptions options = new MarkerOptions();
+
+        //Setting the position of the marker.
         options.position(point);
 
         /**
@@ -181,8 +278,10 @@ public class MainActivity extends AppCompatActivity
             options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
         }
 
+        //Add new marker to the Google Map Android API V2.
         mMap.addMarker(options);
 
+        //Checks, whether start and end locations are captured.
         if (MarkerPoints.size() == 2) {
             origin = MarkerPoints.get(0);
             dest = MarkerPoints.get(1);
@@ -281,102 +380,6 @@ public class MainActivity extends AppCompatActivity
         }
 
         return poly;
-    }
-
-    public boolean servicesOK(){
-        int isAvailable =
-                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
-
-        if(isAvailable == ConnectionResult.SUCCESS){
-            return true;
-        } else if (GoogleApiAvailability.getInstance().isUserResolvableError(isAvailable)){
-            Dialog dialog =
-                    GoogleApiAvailability.getInstance().getErrorDialog(this, isAvailable, ERROR_DIALOG_REQUEST);
-            dialog.show();
-        } else {
-            Toast.makeText(this, "Cannot connect to mapping service", Toast.LENGTH_SHORT).show();
-        }
-        return false;
-    }
-
-    private boolean initMap(){
-        if(mMap == null){
-            SupportMapFragment mapFragment =
-                    (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-            mapFragment.getMapAsync(this);
-        }
-        return true;
-    }
-
-    private void hideSoftKeyboard(View v){
-        InputMethodManager imm =
-                (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-    }
-
-    public void geoLocate(View v) throws IOException{
-        hideSoftKeyboard(v);
-
-        TextView tv = (TextView) findViewById(R.id.editText1);
-        String searchString = tv.getText().toString();
-
-        if(!searchString.equals("")) {
-            Toast.makeText(this, "Searching for: " + searchString, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Search bar cannot leave blank!" + searchString, Toast.LENGTH_SHORT).show();
-        }
-
-        Geocoder gc = new Geocoder(this);
-        List<Address> list = gc.getFromLocationName(searchString, 1);
-
-        if(list.size() > 0) {
-            Address add = list.get(0);
-            String locality = add.getLocality();
-            Toast.makeText(this, "Found: " + locality, Toast.LENGTH_SHORT).show();
-
-            double lat = add.getLatitude();
-            double lng = add.getLongitude();
-            gotoLocation(lat, lng, 15);
-
-            MarkerOptions options = new MarkerOptions()
-                    .title(locality)
-                    .position(new LatLng(lat, lng));
-
-            MarkerPoints.add(options.getPosition());
-            origin_and_destination(options.getPosition());
-        }
-    }
-
-    private void gotoLocation(double lat, double lng, float zoom){
-        LatLng latLng = new LatLng(lat, lng);
-        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latLng, zoom);
-        mMap.animateCamera(update);
-    }
-
-    public void showCurrentLocation(MenuItem item) {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Location currentLocation = LocationServices.FusedLocationApi
-                    .getLastLocation(mLocationClient);
-            if (currentLocation == null) {
-                Toast.makeText(this, "Couldn't connect!", Toast.LENGTH_SHORT).show();
-            } else {
-                LatLng latLng = new LatLng(
-                        currentLocation.getLatitude(),
-                        currentLocation.getLongitude()
-                );
-                CameraUpdate update = CameraUpdateFactory.newLatLngZoom(
-                        latLng, 15
-                );
-                mMap.animateCamera(update);
-
-                MarkerOptions options = new MarkerOptions()
-                        .position(latLng);
-
-                MarkerPoints.add(latLng);
-                origin_and_destination(latLng);
-            }
-        }
     }
 
     @Override
