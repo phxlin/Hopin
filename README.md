@@ -11,4 +11,5 @@ The following **required** functionality is complete:
 * [X] Estimating Distance and Time
 
 ## Video Demo 
-<img src="/gif/2EMTdLG.gif?raw=true" width="200px">
+<img src="/gif/2EMTdLG.gif?raw=true" title='Video Demo' width='' alt='Video Demo' />
+<img src="https://i.imgur.com/pxq40Z7.png" title='Demo' width='' alt='Demo' />
