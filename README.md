@@ -10,6 +10,7 @@ The following **required** functionality is complete:
 * [X] Map with Marker
 * [X] Estimating Distance and Time
 
-## Demo 
+## Video Demo 
 
 <img src='https://i.imgur.com/7FwDqhn.png' title='Demo' width='' alt='Demo' />
+<img src='https://i.imgur.com/5FfZrp0.gif' title='Demo' width='' alt='Demo' />
