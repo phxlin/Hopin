@@ -4,7 +4,7 @@ Hopin is a carpooling application for Android.
 
 ## User Stories
 
-The following **required** functionality is complete:
+The following functionalities are completed:
 * [X] Select Current Place
 * [X] Map with Name
 * [X] Map with Marker
