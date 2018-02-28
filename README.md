@@ -12,4 +12,3 @@ The following functionalities are completed:
 
 ## Video Demo 
 <img src="/gif/2EMTdLG.gif?raw=true" title='Video Demo' width='' alt='Video Demo' />
-<img src="https://i.imgur.com/pxq40Z7.png" title='Demo' width='' alt='Demo' />
